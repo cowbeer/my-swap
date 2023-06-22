@@ -17,7 +17,6 @@ contract MySwap {
     constructor(address _tokenA, address _tokenB) {
         tokenA = IERC20(_tokenA);
         tokenB = IERC20(_tokenB);
-
     }
 
     function _sqrt(uint y) private pure returns (uint z) {
@@ -93,11 +92,25 @@ contract MySwap {
         require(shares > 0, "share is zero");
 
         _mint(msg.sender, shares);
-        
+
         _update(tokenA.balanceOf(address(this)),tokenB.balanceOf(address(this)));
 
         return shares;
     }
 
-    function removeLiquidity() external {}
+    function removeLiquidity(uint _shares) external returns(uint, uint) {
+        require(_shares > 0, "Invalid shares");
+
+        uint amountA = _shares * reserveA / totalSupply;
+        uint amountB = _shares * reserveB / totalSupply;
+
+        _burn(msg.sender, _shares);
+
+        tokenA.transfer(msg.sender, amountA);
+        tokenB.transfer(msg.sender, amountB);
+
+        _update(tokenA.balanceOf(address(this)),tokenB.balanceOf(address(this)));
+
+        return (amountA, amountB);
+    }
 }
