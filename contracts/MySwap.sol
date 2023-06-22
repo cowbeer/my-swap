@@ -20,6 +20,23 @@ contract MySwap {
 
     }
 
+    function _sqrt(uint y) private pure returns (uint z) {
+        if (y > 3) {
+            z = y;
+            uint x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
+    }
+
+    function _min(uint _x, uint _y) private pure returns(uint) {
+        return _x > _y ? _y : _x;
+    }
+
     function _mint(address _to, uint _amount) private {
         balanceOf[_to] += _amount;
         totalSupply += _amount;
@@ -58,7 +75,29 @@ contract MySwap {
         return amountOut;
     }
 
-    function addLiquidity() external {}
+    function addLiquidity(uint _amountA, uint _amountB) external returns (uint) {
+        require(_amountA > 0 && _amountB > 0, "Invalid amount");
+        tokenA.transferFrom(msg.sender, address(this), _amountA);
+        tokenB.transferFrom(msg.sender, address(this), _amountB);
+
+        if (reserveA > 0 || reserveB > 0) {
+            require(_amountA * reserveB == _amountB * reserveA, "dy/dx != y/x");
+        }
+
+        uint shares = 0;
+        if (totalSupply == 0) {
+            shares = _sqrt(_amountA * _amountB);
+        } else {
+            shares = _min(_amountA * totalSupply / reserveA, _amountB * totalSupply / reserveB);
+        }
+        require(shares > 0, "share is zero");
+
+        _mint(msg.sender, shares);
+        
+        _update(tokenA.balanceOf(address(this)),tokenB.balanceOf(address(this)));
+
+        return shares;
+    }
 
     function removeLiquidity() external {}
 }
